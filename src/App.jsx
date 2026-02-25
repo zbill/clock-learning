@@ -34,7 +34,27 @@ function App() {
   const [longPressSpeed, setLongPressSpeed] = useState(0);
   
   const clockFaceRef = useRef(null);
-  const clockSize = 380;
+  const [clockSize, setClockSize] = useState(380);
+  
+  useEffect(() => {
+    const updateClockSize = () => {
+      const width = window.innerWidth;
+      if (width <= 480) {
+        setClockSize(280);
+      } else if (width <= 768) {
+        setClockSize(320);
+      } else {
+        setClockSize(380);
+      }
+    };
+    
+    updateClockSize();
+    window.addEventListener('resize', updateClockSize);
+    
+    return () => {
+      window.removeEventListener('resize', updateClockSize);
+    };
+  }, []);
 
   // 实时时间更新定时器
   const realtimeTimerRef = useRef(null);
@@ -509,7 +529,7 @@ function App() {
          currentMode === 'realtime' ? '实时钟表模式' : '认表模式'}
       </h2>
       
-      <div className="clock-face" ref={clockFaceRef}>
+      <div className="clock-face" ref={clockFaceRef} style={{ width: `${clockSize}px`, height: `${clockSize}px` }}>
         <div className="clock-inner-ring" />
         {renderTicks()}
         {renderNumbers()}
