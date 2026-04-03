@@ -419,14 +419,24 @@ function App() {
   const updateTime = (field, value) => {
     if (currentMode === 'set') return;
     
-    const newTime = { ...currentTime, [field]: parseInt(value) || 0 };
+    let parsedValue;
+    if (value === '' || value === null || value === undefined) {
+      parsedValue = '';
+    } else {
+      parsedValue = parseInt(value);
+      if (isNaN(parsedValue)) {
+        parsedValue = '';
+      }
+    }
+    
+    const newTime = { ...currentTime, [field]: parsedValue };
     setCurrentTime(newTime);
   };
 
   const checkAnswer = () => {
     if (currentMode === 'read') {
-      const userHour = currentTime.hour;
-      const userMinute = currentTime.minute;
+      const userHour = currentTime.hour === '' ? 0 : parseInt(currentTime.hour);
+      const userMinute = currentTime.minute === '' ? 0 : parseInt(currentTime.minute);
       
       if (userHour === targetTime.hour && userMinute === targetTime.minute) {
         setMessage('正确！');
@@ -461,8 +471,11 @@ function App() {
         }
       }
     } else if (currentMode === 'set') {
-      if (Math.abs(currentTime.hour - targetTime.hour) < 0.5 && 
-          Math.abs(currentTime.minute - targetTime.minute) < 1) {
+      const displayHour = currentTime.hour === '' ? 0 : parseInt(currentTime.hour);
+      const displayMinute = currentTime.minute === '' ? 0 : parseInt(currentTime.minute);
+      
+      if (Math.abs(displayHour - targetTime.hour) < 0.5 && 
+          Math.abs(displayMinute - targetTime.minute) < 1) {
         setMessage('正确！');
         setMessageType('success');
         setTimeout(() => {
@@ -478,7 +491,7 @@ function App() {
       } else {
         setChances(prev => prev - 1);
         // 显示指针所指的数值
-        setMessage(`错误！指针所指时间是 ${currentTime.hour.toString().padStart(2, '0')}:${currentTime.minute.toString().padStart(2, '0')}`);
+        setMessage(`错误！指针所指时间是 ${displayHour.toString().padStart(2, '0')}:${displayMinute.toString().padStart(2, '0')}`);
         setMessageType('error');
         if (chances <= 1) {
           setMessage('机会用完了！返回主界面');
@@ -501,9 +514,9 @@ function App() {
   };
 
   const displayTime = currentMode === 'read' ? targetTime : currentTime;
-  const secondDegrees = (displayTime.second / 60) * 360;
-  const minuteDegrees = ((displayTime.minute + displayTime.second / 60) / 60) * 360;
-  const hourDegrees = ((displayTime.hour % 12 + displayTime.minute / 60) / 12) * 360;
+  const secondDegrees = ((displayTime.second || 0) / 60) * 360;
+  const minuteDegrees = (((displayTime.minute || 0) + (displayTime.second || 0) / 60) / 60) * 360;
+  const hourDegrees = (((displayTime.hour || 0) % 12 + (displayTime.minute || 0) / 60) / 12) * 360;
   
   const inputTime = currentMode === 'set' ? targetTime : currentTime;
 
@@ -577,7 +590,7 @@ function App() {
                   }}
                   onPointerUp={stopLongPress}
                   onPointerLeave={stopLongPress}
-                >时针-顺</button>
+                >时针（小针）-顺</button>
                 <button 
                   className="control-btn" 
                   onPointerDown={(e) => {
@@ -586,7 +599,7 @@ function App() {
                   }}
                   onPointerUp={stopLongPress}
                   onPointerLeave={stopLongPress}
-                >时针-逆</button>
+                >时针（小针）-逆</button>
               </div>
               <div className="control-group">
                 <button 
@@ -597,7 +610,7 @@ function App() {
                   }}
                   onPointerUp={stopLongPress}
                   onPointerLeave={stopLongPress}
-                >分针-顺</button>
+                >分针（大针）-顺</button>
                 <button 
                   className="control-btn" 
                   onPointerDown={(e) => {
@@ -606,7 +619,7 @@ function App() {
                   }}
                   onPointerUp={stopLongPress}
                   onPointerLeave={stopLongPress}
-                >分针-逆</button>
+                >分针（大针）-逆</button>
               </div>
             </>
           )}
@@ -621,7 +634,7 @@ function App() {
                   }}
                   onPointerUp={stopLongPress}
                   onPointerLeave={stopLongPress}
-                >时针-顺</button>
+                >时针（小针）-顺</button>
                 <button 
                   className="control-btn" 
                   onPointerDown={(e) => {
@@ -630,7 +643,7 @@ function App() {
                   }}
                   onPointerUp={stopLongPress}
                   onPointerLeave={stopLongPress}
-                >时针-逆</button>
+                >时针（小针）-逆</button>
               </div>
               <div className="control-group">
                 <button 
@@ -641,7 +654,7 @@ function App() {
                   }}
                   onPointerUp={stopLongPress}
                   onPointerLeave={stopLongPress}
-                >分针-顺</button>
+                >分针（大针）-顺</button>
                 <button 
                   className="control-btn" 
                   onPointerDown={(e) => {
@@ -650,7 +663,7 @@ function App() {
                   }}
                   onPointerUp={stopLongPress}
                   onPointerLeave={stopLongPress}
-                >分针-逆</button>
+                >分针（大针）-逆</button>
               </div>
               <div className="control-group">
                 <button 
@@ -690,39 +703,49 @@ function App() {
       {currentMode !== 'realtime' && (
         <div className="time-inputs" id="time-inputs">
         <input 
-          type="number" 
+          type="text" 
           className="time-input" 
           id="hour-input" 
-          min="0" 
-          max="12" 
           value={inputTime.hour}
-          onChange={(e) => updateTime('hour', e.target.value)}
+          onChange={(e) => {
+            const val = e.target.value;
+            if (val === '' || (parseInt(val) >= 0 && parseInt(val) <= 12)) {
+              updateTime('hour', val);
+            }
+          }}
           disabled={currentMode === 'set'}
         />
-        <span>:</span>
+        <span>时</span>
         <input 
-          type="number" 
+          type="text" 
           className="time-input" 
           id="minute-input" 
-          min="0" 
-          max="59" 
           value={inputTime.minute}
-          onChange={(e) => updateTime('minute', e.target.value)}
+          onChange={(e) => {
+            const val = e.target.value;
+            if (val === '' || (parseInt(val) >= 0 && parseInt(val) <= 59)) {
+              updateTime('minute', val);
+            }
+          }}
           disabled={currentMode === 'set'}
         />
+        <span>分</span>
         {currentMode !== 'read' && currentMode !== 'set' && (
           <>
-            <span>:</span>
             <input 
-              type="number" 
+              type="text" 
               className="time-input" 
               id="second-input" 
-              min="0" 
-              max="59" 
               value={currentTime.second}
-              onChange={(e) => updateTime('second', e.target.value)}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === '' || (parseInt(val) >= 0 && parseInt(val) <= 59)) {
+                  updateTime('second', val);
+                }
+              }}
               disabled={currentMode === 'set'}
             />
+            <span>秒</span>
    </>
         )}
         </div>
